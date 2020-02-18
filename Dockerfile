@@ -1,11 +1,11 @@
 FROM zenika/alpine-chrome:76
-ARG NODE_VERSION=v12.16.0
-ARG VERSION=v12.16.0
+ARG NODE_VERSION=v13.8.0
 ARG NPM_VERSION=6
 ARG YARN_VERSION=latest
 
 ARG NG_VERSION
 
+USER root
 
 RUN apk upgrade --no-cache -U && \
   apk add --no-cache curl make gcc g++ python linux-headers binutils-gold gnupg libstdc++
@@ -53,6 +53,7 @@ RUN if [ -z "$CONFIG_FLAGS" ]; then \
   rm ${YARN_VERSION}.tar.gz*; \
   fi; \
   fi
+
 
 RUN apk del curl make gcc g++ python linux-headers binutils-gold gnupg ${DEL_PKGS} && \
   rm -rf ${RM_DIRS} /node-${NODE_VERSION}* /SHASUMS256.txt /tmp/* \
