@@ -8,9 +8,8 @@ ARG NG_VERSION
 USER root
 
 RUN apk upgrade --no-cache -U && \
-  apk add --no-cache curl make gcc g++ python linux-headers binutils-gold gnupg libstdc++
-
-RUN for server in ipv4.pool.sks-keyservers.net keyserver.pgp.com ha.pool.sks-keyservers.net; do \
+  apk add --no-cache curl make gcc g++ python linux-headers binutils-gold gnupg libstdc++ && \
+  for server in ipv4.pool.sks-keyservers.net keyserver.pgp.com ha.pool.sks-keyservers.net; do \
   gpg --keyserver $server --recv-keys \
   4ED778F539E3634C779C87C6D7062848A1AB005C \
   B9E2F5981AA6E0CD28160D9FF13993A75599653C \
@@ -23,18 +22,17 @@ RUN for server in ipv4.pool.sks-keyservers.net keyserver.pgp.com ha.pool.sks-key
   C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8 \
   DD8F2338BAE7501E3DD5AC78C273792F7D83545D \
   A48C2BEE680E841632CD4E44F07496B3EB3C1762 && break; \
-  done
-
-RUN curl -sfSLO https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}.tar.xz && \
+  done && \
+  curl -sfSLO https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}.tar.xz && \
   curl -sfSL https://nodejs.org/dist/${NODE_VERSION}/SHASUMS256.txt.asc | gpg -d -o SHASUMS256.txt && \
   grep " node-${NODE_VERSION}.tar.xz\$" SHASUMS256.txt | sha256sum -c | grep ': OK$' && \
   tar -xf node-${NODE_VERSION}.tar.xz && \
   cd node-${NODE_VERSION} && \
   ./configure --prefix=/usr ${CONFIG_FLAGS} && \
   make -j$(getconf _NPROCESSORS_ONLN) && \
-  make install
-
-RUN if [ -z "$CONFIG_FLAGS" ]; then \
+  make install && \
+  # Install package managers
+  if [ -z "$CONFIG_FLAGS" ]; then \
   if [ -n "$NPM_VERSION" ]; then \
   npm install -g npm@${NPM_VERSION}; \
   fi; \
@@ -52,16 +50,16 @@ RUN if [ -z "$CONFIG_FLAGS" ]; then \
   ln -s /usr/local/share/yarn/bin/yarnpkg /usr/local/bin/ && \
   rm ${YARN_VERSION}.tar.gz*; \
   fi; \
-  fi
+  fi && \
+  # Cleanup packages
+  apk del curl make gcc g++ python linux-headers binutils-gold gnupg
 
-
-RUN apk del curl make gcc g++ python linux-headers binutils-gold gnupg ${DEL_PKGS} && \
-  rm -rf ${RM_DIRS} /node-${NODE_VERSION}* /SHASUMS256.txt /tmp/* \
+# Cleanup dirs
+RUN  rm -rf /usr/include /node* /SHASUMS256.txt /tmp/* \
   /usr/share/man/* /usr/share/doc /root/.npm /root/.node-gyp /root/.config \
   /usr/lib/node_modules/npm/man /usr/lib/node_modules/npm/doc /usr/lib/node_modules/npm/docs \
   /usr/lib/node_modules/npm/html /usr/lib/node_modules/npm/scripts && \
   { rm -rf /root/.gnupg || true; }
-
 
 RUN npm install -g @angular/cli@9.0.1
 
